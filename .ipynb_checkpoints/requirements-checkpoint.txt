@@ -1,4 +1,0 @@
-pandas == 0.25.1
-numpy == 1.16.4
-jupyter_core == 4.5.0
-orange == 
