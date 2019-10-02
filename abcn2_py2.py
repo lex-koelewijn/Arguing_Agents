@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.2.3
+#       jupytext_version: 1.2.4
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 2
 #     language: python
-#     name: python3
+#     name: python2
 # ---
 
 # # ABCN2 Algorithm
@@ -48,25 +48,17 @@ df.isnull().sum()
 # Documentation: https://github.com/biolab/orange3, https://docs.biolab.si//3/data-mining-library/
 
 # +
-data = Orange.data.Table(FILE_INPUT)
+heart_attack = Orange.data.Table(FILE_INPUT)
 
 # Exclude cols: slope, cal and thal which contain a lot of missing values
-new_domain = Orange.data.Domain(
-    list(data.domain.attributes[:10]),
-    list(data.domain.attributes[13:])
-)
+# new_domain = Orange.data.Domain(
+#     list(data.domain.attributes[:9])
+# )
 
-
-heart_attack = Orange.data.Table(new_domain, data)
+# heart_attack = Orange.data.Table(new_domain, data)
 # -
 
-print(heart_attack[0:10])
-
-heart_attack.domain.attributes
-
-for x in heart_attack.domain.attributes:
-    n_miss = sum(1 for d in heart_attack if np.isnan(d[x]))
-    print("%4.1f%% %s" % (100.0 * n_miss / len(heart_attack), x.name))
+heart_attack.domain.attributes[:9]
 
 heart_attack.domain.class_var
 
@@ -76,10 +68,58 @@ cn2_learner = Orange.classification.rules.CN2Learner()
 cn2_classifier = cn2_learner(heart_attack)
 
 # Print out the found rules, with the quality of the rule, and curr_class_dist
-for rule in cn2_classifier.rule_list:
-    print(rule.curr_class_dist.tolist(), rule, rule.quality)
+for rule in cn2_classifier.rules:
+    print Orange.classification.rules.rule_to_string(rule)
 # -
 
 # ### AB part of the algorithm
+
+# +
+# Lets create a rule
+# IF age>50.0 THEN num=1<0.000, 8.000>
+
+# print Orange.data.filter.Values.Greater
+# print Orange.data.filter.ValueFilter.Greater
+# print Orange.feature.Descriptor(obj='age')
+# print heart_attack.domain.attributes[0]
+# print Orange.data.Value(heart_attack.domain.attributes[0], 5)
+# print Orange.core.Filter_values.Greater
+# print Orange.classification.ConstantClassifier(variable='age', value=5)
+
+# rule = Orange.classification.rules.Rule(filter=Orange.data.filter.ValueFilter.Greater, 
+#                                         classifier=Orange.classification.ConstantClassifier(variable='age', value=50), 
+#                                         lr=Orange.classification.rules.CN2Learner, 
+#                                         dist=Orange.statistics.distribution.Distribution('age', heart_attack), 
+#                                         ce=heart_attack)
+# print Orange.data.filter.Values.Greater
+print Orange.data.filter.Values
+print Orange.data.filter.Filter
+print Orange.core.ValueFilter.Greater
+print Orange.core.Filter
+
+
+# rule = Orange.classification.rules.Rule(filter=Orange.core.Filter, 
+#                                         classifier=Orange.classification.ConstantClassifier(Orange.data.Value(heart_attack.domain.attributes[0], 5)),
+#                                         lr=Orange.classification.rules.CN2Learner, 
+#                                         dist=Orange.statistics.distribution.Distribution('num', heart_attack), 
+#                                         ce=heart_attack)
+
+rule = Orange.classification.rules.Rule(filter=Orange.data.filter.Filter,
+                                        classifier=Orange.classification.ConstantClassifier(Orange.data.Value(heart_attack.domain.attributes[0], 50)))
+#                                         lr=Orange.classification.rules.CN2Learner, 
+#                                         dist=Orange.statistics.distribution.Distribution('num', heart_attack), 
+#                                         ce=heart_attack)
+
+print(Orange.classification.rules.rule_to_string(rule))
+rule_list = Orange.classification.rules.RuleList()
+
+# Print out the found rules, with the quality of the rule, and curr_class_dist
+print(rule_list)
+
+# class Orange.classification.rules.RuleCovererAndRemover
+# Base class for rule coverers and removers that, when invoked, remove instances covered by the rule and return remaining instances.
+# Orange.classification.rules.ABCN2(rules=,
+#                                  instances=heart_attack)
+# -
 
 
