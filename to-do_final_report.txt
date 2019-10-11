@@ -1,0 +1,4 @@
+Expert knowledge rules verzinnen die weinig outliers hebben (accuracy)
+Dan de rows wel/niet uit de data verwijderen
+In CN2 stoppen
+Dan nieuwe data eerst classificeren aan de hand van expert rules, daarna door CN2
