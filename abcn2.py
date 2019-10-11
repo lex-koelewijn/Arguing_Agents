@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.2.3
+#       jupytext_version: 1.2.4
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -32,7 +32,7 @@ np.set_printoptions(suppress=True)
 pd.options.display.float_format = '{:.2f}'.format
 # -
 
-FILE_INPUT = 'data.csv'
+FILE_INPUT = 'data/data.csv'
 
 df = pd.read_csv(FILE_INPUT)
 df = df.replace('?', np.nan)
@@ -165,8 +165,8 @@ return_df = df[~df.apply(tuple,1).isin(new_df.apply(tuple,1))]
 # +
 # Toggle this code to run the CN2 classifier with the last rule found by the rule
 # In this case: IF trestbps>=140.0 THEN num=1
-return_df.to_csv("limited_data.csv", index=None)
-data = Orange.data.Table("limited_data.csv")
+return_df.to_csv("data/limited_data.csv", index=None)
+data = Orange.data.Table("data/limited_data.csv")
 
 # Only use CN2 run the line below:
 # data = Orange.data.Table(FILE_INPUT)
