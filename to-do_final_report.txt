@@ -1,4 +1,13 @@
-Expert knowledge rules verzinnen die weinig outliers hebben (accuracy)
-Dan de rows wel/niet uit de data verwijderen
-In CN2 stoppen
-Dan nieuwe data eerst classificeren aan de hand van expert rules, daarna door CN2
+ - Expert knowledge rules verzinnen die weinig outliers hebben (accuracy)
+	- age >= 50 num == 1; vind in df alle entries waar age >= 50, vind percentage waar num == 1
+ - Dan de rows wel/niet uit de data verwijderen
+ - In CN2 stoppen
+ - Dan nieuwe data eerst classificeren aan de hand van expert rules, daarna door CN2
+
+
+Voorbeeld dictionary
+{1: {'age': (50, 0, 0), 'thresbp': 130}, 2: etc}
+(value, operator, num)
+
+0 == <= 50
+1 == > 50
