@@ -32,7 +32,7 @@ np.set_printoptions(suppress=True)
 pd.options.display.float_format = '{:.2f}'.format
 # -
 
-FILE_INPUT = 'data/data.csv'
+FILE_INPUT = 'data/data_shuffled.csv'
 
 df = pd.read_csv(FILE_INPUT)
 df = df.replace('?', np.nan)
@@ -73,6 +73,7 @@ for column in df.columns:
     plt.scatter(df[df['num'] == 0].index, df[df['num'] == 0][column], c = 'g')
     plt.scatter(df[df['num'] == 1].index, df[df['num'] == 1][column], c = 'r')
     plt.figure()
+    plt.show()
 
 print(df[df['num'] == 0].mean() < df[df['num'] == 1].mean())
 # Only in the case of restecg and thalach the lower the score the lower the probability of being ill
@@ -88,8 +89,12 @@ print(df[df['num'] == 0].mean() < df[df['num'] == 1].mean())
 # +
 # Select all the rows in the DataFrame except the last 10,
 # which are used for classification
-df = df.iloc[0:-10]
-test_df = df.iloc[-10:]
+test_rows = int(-0.1* len(df))
+df = df.iloc[0:test_rows]
+test_df = df.iloc[test_rows:]
+
+print(len(df))
+print(len(test_df))
 
 # Dataframe with only labels
 df_labels = df['num']
@@ -113,9 +118,12 @@ for idx, value in enumerate(df_not_num.columns):
 # Sort dictionary based on p-values, lowest first
 p_values_dict_sorted = sorted(p_values_dict.items(), key=operator.itemgetter(1))
 p_values_dict_sorted
-
-
 # -
+
+print(len(df[(df['age'] >= 54) & (df['num'] == 0)]))
+print(len(df[(df['age'] >= 54) & (df['num'] == 1)]))
+print(len(df[df['age'] >= 54]))
+
 
 def create_rule(df, parameter, percentage_expert_knowledge, doubt_percentage):
     # Get length of entire DataFrame and amount of rows that must removed by the rule
@@ -128,10 +136,13 @@ def create_rule(df, parameter, percentage_expert_knowledge, doubt_percentage):
     
     # For all parameters except 'thalach' and 'restecg' high values indicate higher chance,
     # of heart attack.
+#     num_value = False if (parameter == 'thalach' or parameter == 'restecg') else num_value = True
     if parameter == 'thalach' or parameter == 'restecg':
-        df = df[df['num'] == 0]
-    else:
-        df = df[df['num'] == 1]
+        num_value = 0
+#         df = df[df['num'] == 0]
+    else: 
+        num_value = 1
+#         df = df[df['num'] == 1]
     
     # Loop from max to min and find the value where the rule covers 10% of the DataFrame.
     # Values van 1 zijn groter dan die van 0
@@ -141,21 +152,35 @@ def create_rule(df, parameter, percentage_expert_knowledge, doubt_percentage):
     iterator = [x/10 for x in range(max_value * 10, min_value * 10, -1)]
     
     for i in iterator:
-        new_df = df[df[parameter] >= i]
+        new_df = df[(df[parameter] >= i) & (df['num'] == num_value)]
+        new_df_all = df[df[parameter] >= i]
+#         new_df_negative = df[(df[parameter] >= i) & (df['num'] != num_value)]
         if len(new_df) >= length_subset_df:
             value = i
             break
     
     print('IF ' + str(parameter) + '>=' + str(value) + ' THEN num=' + str(df['num'].values[0]) + '\n' \
            + ' rows covered = ' + str(len(new_df)) + ' of minimal number of rows = ' + str(length_subset_df))
-    return parameter, value, df['num'].values[0], new_df
+    print('Number of rows where num is opposite of rule: ' + str(len(new_df_all) - len(new_df)) + ' from total ' + (str(len(new_df_all))))
+    print('Accuracy is: '  + str(len(new_df) / len(new_df_all) * 100))
+    
+#     return parameter, value, 1, df['num'].values[0], new_df
+    return parameter, value, 1, num_value, new_df
 
 
 # +
-for column in df_not_num.columns:
-    parameter, value, num, new_df = create_rule(df, column, 0.1, 0.5)
+rules_dict = {}
+for index, column in enumerate(df_not_num.columns):
+    parameter, value, operator, num, new_df = create_rule(df, column, 0.1, 0.5)
+    
+    rules = {}
+    rules[parameter] = (int(value), operator, num)
+    rules_dict[index] = rules
 
 return_df = df[~df.apply(tuple,1).isin(new_df.apply(tuple,1))]
+print(rules_dict)
+
+# SORT RULES BASED ON ACCURACY 
 # -
 
 # ## CN2 Algorithm
@@ -237,3 +262,5 @@ for idx, x in enumerate(cn2_classifier(heart_attack, True)):
     else:
         incorrectly_classified += 1
 "Correctly and incorrectly classified train data ", correctly_classified, incorrectly_classified
+
+
