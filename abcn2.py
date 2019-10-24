@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.2.3
+#       jupytext_version: 1.2.4
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -179,7 +179,7 @@ for index, column in enumerate(df_not_num.columns):
 
 return_df = df[~df.apply(tuple,1).isin(new_df.apply(tuple,1))]
 print(rules_dict)
-
+print(return_df)
 # SORT RULES BASED ON ACCURACY 
 # -
 
@@ -262,5 +262,54 @@ for idx, x in enumerate(cn2_classifier(heart_attack, True)):
     else:
         incorrectly_classified += 1
 "Correctly and incorrectly classified train data ", correctly_classified, incorrectly_classified
+
+print(heart_attack_test)
+print(rules_dict)
+
+# +
+#Classify the test set according to our expert rules. You go through each measurement of a row in the test set until you find an applicable expert 
+#rule and let that rule decide the num that it shoud be classified as. 
+
+parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
+classification = np.zeros(len(heart_attack_test))
+
+#Loop through test set
+i = 0 
+for row in heart_attack_test:
+    m = 0 
+    for measurement in row: 
+        rule = rules_dict[m]                 #this gets the rule corresponding to the current measurement
+        rule_tuple = rule[parameters[m]]     #Get the tuple from the rule
+        if(rule_tuple[1]==0):
+            #measurement must be smaller than
+            if(measurement < rule_tuple[0]):
+                num_for_measurement = rule_tuple[2]
+                #Add the classification of this row by the expert rule to the classification list. 
+                classification[i] = num_for_measurement
+                break
+            else: 
+                m += 1     #No applicable expert rule found, try the next measurement
+                continue
+        elif(rule_tuple[1]==1):
+            #measurement must be larger or equal then
+            if(measurement >= rule_tuple[0]):
+                num_for_measurement = rule_tuple[2]
+                #Add the classification of this row by the expert rule to the classification list. 
+                classification[i] = num_for_measurement
+                break
+            else: 
+                m += 1     #No applicable expert rule found, try the next measurement
+                continue
+    i += 1
+    ####
+####
+
+#Classification is always 1 due to the fbs rule generated before. 
+print(classification)
+# -
+
+
+
+
 
 

@@ -10,3 +10,6 @@ CODE:
 		classify wanneer mogelijk
 	- Als een data point niet voldoet aan dictionary, doorzetten naar CN2 (beide models?)
 	- Totale performance bepalen ahv resultaten van handmatig/CN2 en de bekende labels
+
+	*Print statement die num voor verzonnen regels geeft klopt niet? Althans komt niet overeen met de num van de regels in het woordenboek.
+	*Die fbs regel is echt heel slecht. 
