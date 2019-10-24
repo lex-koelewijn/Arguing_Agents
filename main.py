@@ -12,10 +12,8 @@
 #     name: python3
 # ---
 
-# # To-be-named algorithm
+# # To-be-named Algorithm
 
-# The following notebook is used to import a dataset, and apply the ABCN2 algorithm to it. This uses the CN2 rule based learning algorithm, as well as expert rules which we will also derive from the dataset in this notebook
-#
 # Data: Heart Attack Prediction, https://www.kaggle.com/imnikhilanand/heart-attack-prediction
 
 # ## Imports and reading data
@@ -71,7 +69,7 @@ df.nunique()
 # +
 # Select all the rows in the DataFrame except the last 10 percent,
 # which are used for classification
-test_percentage = 20
+test_percentage = 15
 test_rows = int(-(test_percentage/100) * len(df))
 train_df = df.iloc[0:test_rows]
 test_df = df.iloc[test_rows:]
@@ -175,7 +173,6 @@ train_df_not_num_orange = Orange.data.Table("data/train_df_not_num.csv")
 test_df_not_num.to_csv("data/test_df_not_num.csv", index=None)
 test_df_not_num_orange = Orange.data.Table("data/test_df_not_num.csv")
 
-# +
 # Find the index of num in the train set
 num_idx = [idx for idx, value in enumerate(train_df_orange.domain.attributes) if str(value) == 'num']
 # Create orange domain (lets orange know what the (in)dependent variables are)
@@ -184,29 +181,16 @@ orange_domain = Orange.data.Domain(list(train_df_not_num_orange.domain.attribute
 train_orange_table = Orange.data.Table(orange_domain, train_df_orange)
 test_orange_table = Orange.data.Table(orange_domain, test_df_not_num_orange)
 
-print(test_orange_table.domain.attributes)
-print(test_orange_table.domain.class_var)
-
 # +
 # Create a CN2 instance and train it on the train_orange_table
 cn2 = Orange.classification.rules.CN2Learner()
 cn2_trained = cn2(train_orange_table)
 
-# # Print the rules it found
-# for rule in cn2_trained.rule_list:
-#     print(rule)
-
 # Classify the test set
 cn2_labels = list(cn2_trained(test_orange_table, False))
-actual_labels = list(test_df['num'])
-print(f"CN2:\t{cn2_labels}")
-print(f"Actual:\t{actual_labels}")
+# -
 
-num_correct = 0
-for cn2, actual in zip(cn2_labels, actual_labels):
-    if cn2 == actual:
-        num_correct +=1
-print(f"Accuracy:\t{round((num_correct/len(actual_labels))*100, 1)}%")
+# ## Expert Classification
 
 # +
 #Classify the test set according to our expert rules. You go through each measurement of a row in the test set until you find an applicable expert 
@@ -215,7 +199,7 @@ print(f"Accuracy:\t{round((num_correct/len(actual_labels))*100, 1)}%")
 # rules_dict = {0: {'age': (54, 1, 1)}, 1: {'chol': (285, 1, 1)}}
 # parameters = ["age", "chol"]
 parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
-classification = [-1]*len(test_df_not_num_orange)
+expert_labels = [-1]*len(test_df_not_num_orange)
 
 #Loop through test set
 i = 0 
@@ -231,7 +215,7 @@ for row in test_df_not_num_orange:
             if(measurement < rule_tuple[0]):
                 num_for_measurement = rule_tuple[2]
                 #Add the classification of this row by the expert rule to the classification list. 
-                classification[i] = num_for_measurement
+                expert_labels[i] = num_for_measurement
                 break
             else: 
                 m += 1     #No applicable expert rule found, try the next measurement
@@ -241,21 +225,51 @@ for row in test_df_not_num_orange:
             if(measurement >= rule_tuple[0]):
                 num_for_measurement = rule_tuple[2]
                 #Add the classification of this row by the expert rule to the classification list. 
-                classification[i] = num_for_measurement
+                expert_labels[i] = num_for_measurement
                 break
             else: 
                 m += 1     #No applicable expert rule found, try the next measurement
                 continue
     i += 1
-    ####
-####
-
-#Classification is always 1 due to the fbs rule generated before. [-1 means no applicable rule found.] 
-print(f"Expert Classification :\t{classification}")
-print(f"Actual:\t{actual_labels}")
-
-    
-        
 # -
+# ## Combining the CN2 and Expert labels
 
 
+# Checks if expert_labels has a useful label (0 or 1) and copies that,
+# if there is not useful label, the cn2 label is copied instead.
+final_labels = []
+for expert_label, cn2_label in zip(expert_labels, cn2_labels):
+    if expert_label == 0 or expert_label == 1:
+        final_labels.append(expert_label)
+    else:
+        final_labels.append(cn2_label)
+
+
+# ## Calculating accuracy scores
+
+# +
+# Returns the percentage of correct labels
+def get_accuracy(pred_labels, correct_labels):
+    num_correct = 0
+    for cn2, actual in zip(pred_labels, correct_labels):
+        if cn2 == actual: num_correct +=1
+    return round(((num_correct/len(correct_labels))*100), 1)
+# Returns the percentage of useful labels of a label
+def get_coverage(labels):
+    num_covered = 0
+    for label in labels:
+        if label == 0 or label == 1: num_covered +=1
+    return round(((num_covered/len(labels))*100), 1)
+
+# The actual labels to compare against
+actual_labels = list(test_df['num'])
+
+# Print stuff
+print(f"CN2:\t{cn2_labels}")
+print(f"Expert:\t{expert_labels}")
+print(f"Final:\t{final_labels}")
+print(f"Actual:\t{actual_labels}")
+print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_labels, actual_labels)}%")
+print(f"Expert Accuracy:\t{get_accuracy(expert_labels, actual_labels)}%")
+print(f"Expert Coverage:\t{get_coverage(expert_labels)}%")
+print(f"Final Accuracy:\t\t{get_accuracy(final_labels, actual_labels)}%")
