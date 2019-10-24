@@ -270,14 +270,18 @@ print(rules_dict)
 #Classify the test set according to our expert rules. You go through each measurement of a row in the test set until you find an applicable expert 
 #rule and let that rule decide the num that it shoud be classified as. 
 
+# rules_dict = {0: {'age': (54, 1, 1)}, 1: {'chol': (285, 1, 1)}}
+# parameters = ["age", "chol"]
 parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
-classification = np.zeros(len(heart_attack_test))
+classification = np.full(len(heart_attack_test), -1)
 
 #Loop through test set
 i = 0 
 for row in heart_attack_test:
     m = 0 
     for measurement in row: 
+        if( m > len(parameters)-1):
+            break
         rule = rules_dict[m]                 #this gets the rule corresponding to the current measurement
         rule_tuple = rule[parameters[m]]     #Get the tuple from the rule
         if(rule_tuple[1]==0):
@@ -305,7 +309,13 @@ for row in heart_attack_test:
 ####
 
 #Classification is always 1 due to the fbs rule generated before. 
+#-1 means no applicable rule found. 
 print(classification)
+
+#Print nog even een list met test_set size met classificatie based op expert knowledge en actual.
+#Als er geen regel is zet het dan even op -1 dan wordt cn2 niet geoverwrite, en als je wel wat vind dat zet je dat in de array en kan 
+#Cn2 overwrite worden. 
+#print accuracy
 # -
 
 

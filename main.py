@@ -209,14 +209,53 @@ for cn2, actual in zip(cn2_labels, actual_labels):
 print(f"Accuracy:\t{round((num_correct/len(actual_labels))*100, 1)}%")
 
 # +
-features = ['age', 'chol', 'cp', 'exang', 'fbs', 'oldpeak', 'restecg', 'sex', 'thalach', 'trestbps']
-for i, ftr in enumerate(features):
-        if(rules_dict[i][ftr][1] == 1):
-            operator = '>='
-        else:
-            operator = '<'
-        print(f"if {ftr} {operator} {rules_dict[i][ftr][0]}, then num={rules_dict[i][ftr][2]}")
+#Classify the test set according to our expert rules. You go through each measurement of a row in the test set until you find an applicable expert 
+#rule and let that rule decide the num that it shoud be classified as. 
 
+# rules_dict = {0: {'age': (54, 1, 1)}, 1: {'chol': (285, 1, 1)}}
+# parameters = ["age", "chol"]
+parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
+classification = [-1]*len(test_df_not_num_orange)
+
+#Loop through test set
+i = 0 
+for row in test_df_not_num_orange:
+    m = 0 
+    for measurement in row: 
+        if( m > len(parameters)-1):
+            break
+        rule = rules_dict[m]                 #this gets the rule corresponding to the current measurement
+        rule_tuple = rule[parameters[m]]     #Get the tuple from the rule
+        if(rule_tuple[1]==0):
+            #measurement must be smaller than
+            if(measurement < rule_tuple[0]):
+                num_for_measurement = rule_tuple[2]
+                #Add the classification of this row by the expert rule to the classification list. 
+                classification[i] = num_for_measurement
+                break
+            else: 
+                m += 1     #No applicable expert rule found, try the next measurement
+                continue
+        elif(rule_tuple[1]==1):
+            #measurement must be larger or equal then
+            if(measurement >= rule_tuple[0]):
+                num_for_measurement = rule_tuple[2]
+                #Add the classification of this row by the expert rule to the classification list. 
+                classification[i] = num_for_measurement
+                break
+            else: 
+                m += 1     #No applicable expert rule found, try the next measurement
+                continue
+    i += 1
+    ####
+####
+
+#Classification is always 1 due to the fbs rule generated before. [-1 means no applicable rule found.] 
+print(f"Expert Classification :\t{classification}")
+print(f"Actual:\t{actual_labels}")
 
     
         
+# -
+
+
