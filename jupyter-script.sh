@@ -4,6 +4,6 @@
 # Start the jupyter server
 # Converts .ipynb back to .py once the server is closed
 
-jupytext --to ipynb abcn2.py
+jupytext --to ipynb main.py
 jupyter lab
-jupytext --to py abcn2.ipynb
+jupytext --to py main.ipynb

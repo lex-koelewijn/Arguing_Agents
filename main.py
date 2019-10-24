@@ -12,7 +12,7 @@
 #     name: python3
 # ---
 
-# # ABCN2 Algorithm
+# # To-be-named algorithm
 
 # The following notebook is used to import a dataset, and apply the ABCN2 algorithm to it. This uses the CN2 rule based learning algorithm, as well as expert rules which we will also derive from the dataset in this notebook
 #
@@ -32,7 +32,7 @@ np.set_printoptions(suppress=True)
 pd.options.display.float_format = '{:.2f}'.format
 # -
 
-FILE_INPUT = 'data/data.csv'
+FILE_INPUT = 'data/data_shuffled.csv'
 
 df = pd.read_csv(FILE_INPUT)
 df = df.replace('?', np.nan)
@@ -66,18 +66,13 @@ df.describe()
 # Prints unique values
 df.nunique()
 
-# ## Create Expert Knowledge
-
-# We want to create expert knowledge based rules. Since we do not have the expertise to create these rules ourselves, we need to come up with a way to create rules. The idea of CN2 is that a rule is created and then the data entries in the data that are covered by the rule are removed, and then the process is repeated. The amount of rows that the rule covers says something about the importance of the rule. The more rows are removed the more the rule says about the data, and the more powerfull it is. 
-#
-# In the end we want to experiment with the percentage of expert knowledge and machine learning knowledge. Therefore we want to create a function that returns a rule given the percentage of rows it removes. Ideally we want this to be a singular rule, since an expert is more likely to come up with a basic rule that covers most of the patients.
-#
-# Before all this we want to know which parameters have the most influence on the occurrence of a heart attack, which we can later use in the creation of expert knowledge rules.
+# ## Creating train/test sets
 
 # +
 # Select all the rows in the DataFrame except the last 10 percent,
 # which are used for classification
-test_rows = int(-0.2* len(df))
+test_percentage = 20
+test_rows = int(-(test_percentage/100) * len(df))
 train_df = df.iloc[0:test_rows]
 test_df = df.iloc[test_rows:]
 
@@ -98,6 +93,14 @@ print(test_df_not_num.head())
 
 
 # -
+
+# ## Create Expert Knowledge
+
+# We want to create expert knowledge based rules. Since we do not have the expertise to create these rules ourselves, we need to come up with a way to create rules. The idea of CN2 is that a rule is created and then the data entries in the data that are covered by the rule are removed, and then the process is repeated. The amount of rows that the rule covers says something about the importance of the rule. The more rows are removed the more the rule says about the data, and the more powerfull it is. 
+#
+# In the end we want to experiment with the percentage of expert knowledge and machine learning knowledge. Therefore we want to create a function that returns a rule given the percentage of rows it removes. Ideally we want this to be a singular rule, since an expert is more likely to come up with a basic rule that covers most of the patients.
+#
+# Before all this we want to know which parameters have the most influence on the occurrence of a heart attack, which we can later use in the creation of expert knowledge rules.
 
 def create_rule(df, parameter, percentage_expert_knowledge, doubt_percentage):
     # Get length of entire DataFrame and amount of rows that must removed by the rule
@@ -159,9 +162,9 @@ print(rules_dict)
 
 # Documentation: https://github.com/biolab/orange3, https://docs.biolab.si//3/data-mining-library/
 
-# ### Combined Classifier (Manual & CN2)
+# ## CN2 Classification
 
-### Create datasets to convert to Orange
+### Convert datasets to orange format
 # train set
 train_df.to_csv("data/train_df.csv", index=None)
 train_df_orange = Orange.data.Table("data/train_df.csv")
@@ -173,6 +176,7 @@ test_df_not_num.to_csv("data/test_df_not_num.csv", index=None)
 test_df_not_num_orange = Orange.data.Table("data/test_df_not_num.csv")
 
 # +
+# Find the index of num in the train set
 num_idx = [idx for idx, value in enumerate(train_df_orange.domain.attributes) if str(value) == 'num']
 # Create orange domain (lets orange know what the (in)dependent variables are)
 orange_domain = Orange.data.Domain(list(train_df_not_num_orange.domain.attributes), train_df_orange.domain.attributes[num_idx[0]])
@@ -188,13 +192,21 @@ print(test_orange_table.domain.class_var)
 cn2 = Orange.classification.rules.CN2Learner()
 cn2_trained = cn2(train_orange_table)
 
-# Print the rules it found
-for rule in cn2_trained.rule_list:
-    print(rule)
+# # Print the rules it found
+# for rule in cn2_trained.rule_list:
+#     print(rule)
 
-# Classify the test_orange_table
-print(f"CN2:\t{list(cn2_trained(test_orange_table, False))}")
-print(f"Actual:\t{list(test_df['num'])}")
+# Classify the test set
+cn2_labels = list(cn2_trained(test_orange_table, False))
+actual_labels = list(test_df['num'])
+print(f"CN2:\t{cn2_labels}")
+print(f"Actual:\t{actual_labels}")
+
+num_correct = 0
+for cn2, actual in zip(cn2_labels, actual_labels):
+    if cn2 == actual:
+        num_correct +=1
+print(f"Accuracy:\t{round((num_correct/len(actual_labels))*100, 1)}%")
 
 # +
 features = ['age', 'chol', 'cp', 'exang', 'fbs', 'oldpeak', 'restecg', 'sex', 'thalach', 'trestbps']
