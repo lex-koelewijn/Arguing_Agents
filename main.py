@@ -77,9 +77,6 @@ test_df = df.iloc[test_rows:]
 print(f"train_df len:\t{len(train_df)}")
 print(f"test_df len:\t{len(test_df)}")
 
-# Dataframe with only labels
-df_labels = df['num']
-
 # DataFrame without labels
 train_df_not_num = train_df[train_df.columns.difference(['num'])]
 test_df_not_num = test_df[test_df.columns.difference(['num'])]
@@ -152,7 +149,7 @@ for index, column in enumerate(train_df_not_num.columns):
     rules[parameter] = (int(value), operator, num)
     rules_dict[index] = rules
 
-return_df = df[~df.apply(tuple,1).isin(new_df.apply(tuple,1))]
+train_partial_df = train_df[~train_df.apply(tuple,1).isin(new_df.apply(tuple,1))]
 print(rules_dict)
 
 # SORT RULES BASED ON ACCURACY 
@@ -162,6 +159,7 @@ print(rules_dict)
 
 # ## CN2 Classification
 
+# +
 ### Convert datasets to orange format
 # train set
 train_df.to_csv("data/train_df.csv", index=None)
@@ -169,9 +167,16 @@ train_df_orange = Orange.data.Table("data/train_df.csv")
 # train set not num
 train_df_not_num.to_csv("data/train_df_not_num.csv", index=None)
 train_df_not_num_orange = Orange.data.Table("data/train_df_not_num.csv")
+# partial train set
+train_partial_df.to_csv("data/train_partial_df.csv", index=None)
+train_partial_df_orange = Orange.data.Table("data/train_partial_df.csv")
 # test set not num
 test_df_not_num.to_csv("data/test_df_not_num.csv", index=None)
 test_df_not_num_orange = Orange.data.Table("data/test_df_not_num.csv")
+
+# print(len(train_df_not_num))
+# print(len(train_partial_df_not_num))
+# -
 
 # Find the index of num in the train set
 num_idx = [idx for idx, value in enumerate(train_df_orange.domain.attributes) if str(value) == 'num']
@@ -179,15 +184,29 @@ num_idx = [idx for idx, value in enumerate(train_df_orange.domain.attributes) if
 orange_domain = Orange.data.Domain(list(train_df_not_num_orange.domain.attributes), train_df_orange.domain.attributes[num_idx[0]])
 # Apply this domain to the train and test sets
 train_orange_table = Orange.data.Table(orange_domain, train_df_orange)
+train_partial_orange_table = Orange.data.Table(orange_domain, train_partial_df_orange)
 test_orange_table = Orange.data.Table(orange_domain, test_df_not_num_orange)
+# Print to verify
+print(train_orange_table.domain)
+print(train_partial_orange_table.domain)
 
 # +
-# Create a CN2 instance and train it on the train_orange_table
-cn2 = Orange.classification.rules.CN2Learner()
-cn2_trained = cn2(train_orange_table)
+# Create CN2 instances and train them
+cn2_full = Orange.classification.rules.CN2Learner()
+cn2_full_trained = cn2_full(train_orange_table)
+cn2_partial = Orange.classification.rules.CN2Learner()
+cn2_partial_trained = cn2_partial(train_partial_orange_table)
 
-# Classify the test set
-cn2_labels = list(cn2_trained(test_orange_table, False))
+# Classify the test sets
+cn2_full_labels = list(cn2_full_trained(test_orange_table, False))
+cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
+
+# Print rules of CN2
+# for rule in cn2_full_trained.rule_list:
+#     print(rule.curr_class_dist.tolist(), rule, rule.quality)
+# print("---")
+# for rule in cn2_partial_trained.rule_list:
+#     print(rule.curr_class_dist.tolist(), rule, rule.quality)
 # -
 
 # ## Expert Classification
@@ -199,7 +218,8 @@ cn2_labels = list(cn2_trained(test_orange_table, False))
 # rules_dict = {0: {'age': (54, 1, 1)}, 1: {'chol': (285, 1, 1)}}
 # parameters = ["age", "chol"]
 parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
-expert_labels = [-1]*len(test_df_not_num_orange)
+expert_labels = [2]*len(test_df_not_num_orange)
+                # 2 looks better than -1 whet printing the results
 
 #Loop through test set
 i = 0 
@@ -235,15 +255,23 @@ for row in test_df_not_num_orange:
 # ## Combining the CN2 and Expert labels
 
 
+# +
 # Checks if expert_labels has a useful label (0 or 1) and copies that,
 # if there is not useful label, the cn2 label is copied instead.
-final_labels = []
-for expert_label, cn2_label in zip(expert_labels, cn2_labels):
-    if expert_label == 0 or expert_label == 1:
-        final_labels.append(expert_label)
-    else:
-        final_labels.append(cn2_label)
+def combine_cn2_expert(cn2_labels, expert_labels):
+    final_labels = []
+    for cn2_label, expert_label in zip(cn2_labels, expert_labels):
+        if expert_label == 0 or expert_label == 1:
+            final_labels.append(expert_label)
+        else:
+            final_labels.append(cn2_label)
+    return final_labels
 
+final_full_labels = combine_cn2_expert(cn2_full_labels, expert_labels)
+final_partial_labels = combine_cn2_expert(cn2_partial_labels, expert_labels)
+
+
+# -
 
 # ## Calculating accuracy scores
 
@@ -265,11 +293,25 @@ def get_coverage(labels):
 actual_labels = list(test_df['num'])
 
 # Print stuff
-print(f"CN2:\t{cn2_labels}")
+print("EXPERT CLASSIFICATION:")
 print(f"Expert:\t{expert_labels}")
-print(f"Final:\t{final_labels}")
 print(f"Actual:\t{actual_labels}")
-print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_labels, actual_labels)}%")
-print(f"Expert Accuracy:\t{get_accuracy(expert_labels, actual_labels)}%")
-print(f"Expert Coverage:\t{get_coverage(expert_labels)}%")
-print(f"Final Accuracy:\t\t{get_accuracy(final_labels, actual_labels)}%")
+print(f"Expert Accuracy:\t{get_accuracy(expert_labels, actual_labels)}%\t({get_coverage(expert_labels)}% coverage)")
+
+print("\nCN2 CLASSIFICATION (FULL TRAIN SET):")
+print(f"CN2:\t{cn2_full_labels}")
+print(f"Final:\t{final_full_labels}")
+print(f"Actual:\t{actual_labels}")
+print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_full_labels, actual_labels)}%")
+print(f"Final Accuracy:\t\t{get_accuracy(final_full_labels, actual_labels)}%")
+
+print("\nCN2 CLASSIFICATION (PARTIAL TRAIN SET):")
+print(f"CN2:\t{cn2_partial_labels}")
+print(f"Final:\t{final_partial_labels}")
+print(f"Actual:\t{actual_labels}")
+print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_partial_labels, actual_labels)}%")
+print(f"Final Accuracy:\t\t{get_accuracy(final_partial_labels, actual_labels)}%")
+
+print("\nOTHER INFO:")
+print(f"Full train set size:\t{len(train_df)}")
+print(f"Partial train set size:\t{len(train_partial_df)}")
