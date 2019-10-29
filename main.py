@@ -12,7 +12,7 @@
 #     name: python3
 # ---
 
-# # To-be-named Algorithm
+# # eCN2 Algorithm
 
 # Data: Heart Attack Prediction, https://www.kaggle.com/imnikhilanand/heart-attack-prediction
 
@@ -30,7 +30,7 @@ np.set_printoptions(suppress=True)
 pd.options.display.float_format = '{:.2f}'.format
 # -
 
-FILE_INPUT = 'data/data_shuffled.csv'
+FILE_INPUT = 'data/data.csv'
 
 df = pd.read_csv(FILE_INPUT)
 df = df.replace('?', np.nan)
@@ -67,24 +67,32 @@ df.nunique()
 # ## Creating train/test sets
 
 # +
-# Select all the rows in the DataFrame except the last 10 percent,
+# Select all the rows in the DataFrame except the last n percent,
 # which are used for classification
 test_percentage = 15
 test_rows = int(-(test_percentage/100) * len(df))
-train_df = df.iloc[0:test_rows]
-test_df = df.iloc[test_rows:]
-
-print(f"train_df len:\t{len(train_df)}")
-print(f"test_df len:\t{len(test_df)}")
-
+# Static Sampling
+#train_df = df.iloc[0:test_rows]
+#test_df = df.iloc[test_rows:]
+# Random Sampling
+train_df = df.sample(int((1-(test_percentage/100)) * len(df)), random_state=1337)
+test_df = df[~df.apply(tuple,1).isin(train_df.apply(tuple,1))]
 # DataFrame without labels
 train_df_not_num = train_df[train_df.columns.difference(['num'])]
 test_df_not_num = test_df[test_df.columns.difference(['num'])]
 
-print(train_df.head())
-print(test_df.head())
-print(train_df_not_num.head())
-print(test_df_not_num.head())
+# print(train_df.head())
+# print(test_df.head())
+# print(train_df_not_num.head())
+# print(test_df_not_num.head())
+
+print(f"Rows where oldpeak>=2.0 (train/test):\t({len(train_df.loc[train_df['oldpeak'] >= 2.0])}/{len(test_df.loc[test_df['oldpeak'] >= 2.0])})")
+print(f"Rows where thalach>=170 (train/test):\t({len(train_df.loc[train_df['thalach'] >= 170])}/{len(test_df.loc[test_df['thalach'] >= 170])})")
+print(f"df total length:\t{len(df)}")
+print(f"train_df total length:\t{len(train_df)}")
+print(f"test_df total length:\t{len(test_df)}")
+if (len(train_df) + (len(test_df)) == len(df)):
+    print("\tAll rows are used!")
 
 
 # -
@@ -143,7 +151,7 @@ def create_rule(df, parameter, percentage_expert_knowledge, doubt_percentage):
 # +
 rules_dict = {}
 for index, column in enumerate(train_df_not_num.columns):
-    parameter, value, operator, num, new_df = create_rule(df, column, 0.1, 0.5)
+    parameter, value, operator, num, new_df = create_rule(train_df, column, 0.1, 0.5)
     
     rules = {}
     rules[parameter] = (int(value), operator, num)
@@ -215,9 +223,9 @@ cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
 #Classify the test set according to our expert rules. You go through each measurement of a row in the test set until you find an applicable expert 
 #rule and let that rule decide the num that it shoud be classified as. 
 
-# rules_dict = {0: {'age': (54, 1, 1)}, 1: {'chol': (285, 1, 1)}}
-# parameters = ["age", "chol"]
-parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
+rules_dict = {0: {'oldpeak': (2.0, 1, 0)}}
+parameters = ["oldpeak"]
+# parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
 expert_labels = [2]*len(test_df_not_num_orange)
                 # 2 looks better than -1 whet printing the results
 
