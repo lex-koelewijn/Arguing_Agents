@@ -12,7 +12,7 @@
 #     name: python3
 # ---
 
-# # eCN2 Algorithm
+# # expCN2 Algorithm
 
 # Data: Heart Attack Prediction, https://www.kaggle.com/imnikhilanand/heart-attack-prediction
 
@@ -75,24 +75,23 @@ test_rows = int(-(test_percentage/100) * len(df))
 #train_df = df.iloc[0:test_rows]
 #test_df = df.iloc[test_rows:]
 # Random Sampling
-train_df = df.sample(int((1-(test_percentage/100)) * len(df)), random_state=1337)
-test_df = df[~df.apply(tuple,1).isin(train_df.apply(tuple,1))].sample(frac=1, random_state=1337)
+train_df = df.sample(int((1-(test_percentage/100)) * len(df)), random_state=420)
+test_df = df[~df.apply(tuple,1).isin(train_df.apply(tuple,1))].sample(frac=1, random_state=420)
 # DataFrame without labels
 train_df_not_num = train_df[train_df.columns.difference(['num'])]
 test_df_not_num = test_df[test_df.columns.difference(['num'])]
 
-print(train_df.head())
-print(test_df.head())
-print(train_df_not_num.head())
-print(test_df_not_num.head())
+# print(train_df.head())
+# print(test_df.head())
+# print(train_df_not_num.head())
+# print(test_df_not_num.head())
 
-print(f"Rows where oldpeak>=2.0 (train/test):\t({len(train_df.loc[train_df['oldpeak'] >= 2.0])}/{len(test_df.loc[test_df['oldpeak'] >= 2.0])})")
-print(f"Rows where thalach>=170 (train/test):\t({len(train_df.loc[train_df['thalach'] >= 170])}/{len(test_df.loc[test_df['thalach'] >= 170])})")
+# print(f"Rows where oldpeak>=2.0 (train/test):\t({len(train_df.loc[train_df['oldpeak'] >= 2.0])}/{len(test_df.loc[test_df['oldpeak'] >= 2.0])})")
+# print(f"Rows where thalach>=170 (train/test):\t({len(train_df.loc[train_df['thalach'] >= 170])}/{len(test_df.loc[test_df['thalach'] >= 170])})")
+
 print(f"df total length:\t{len(df)}")
 print(f"train_df total length:\t{len(train_df)}")
 print(f"test_df total length:\t{len(test_df)}")
-if (len(train_df) + (len(test_df)) == len(df)):
-    print("\tAll rows are used!")
 
 
 # -
@@ -151,7 +150,7 @@ def create_rule(df, parameter, percentage_expert_knowledge, doubt_percentage):
 # +
 rules_dict = {}
 for index, column in enumerate(train_df_not_num.columns):
-    parameter, value, operator, num, new_df = create_rule(train_df, column, 0.1, 0.5)
+    parameter, value, operator, num, new_df = create_rule(df, column, 0.1, 0.5)
     
     rules = {}
     rules[parameter] = (int(value), operator, num)
@@ -165,7 +164,7 @@ print(rules_dict)
 
 # Documentation: https://github.com/biolab/orange3, https://docs.biolab.si//3/data-mining-library/
 
-# ## CN2 Classification
+# ## CN2 Classifications
 
 # +
 ### Convert datasets to orange format
@@ -224,14 +223,14 @@ cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
 #rule and let that rule decide the num that it shoud be classified as. 
 
 #Please note that the parameter list should contains all names of the parameters used in the rule dictionary in the same order. 
-rules_dict = {0: {'oldpeak': (2.0, 1, 0)}}
-parameters = ["oldpeak"]
+rules_dict = {0: {'thalach': (170, 1, 0)}}
+parameters = ["thalach"]
 # parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
 
 #These are the names of the column in the data table
 table_columns = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
 expert_labels = [2]*len(test_df_not_num_orange)
-                # 2 looks better than -1 whet printing the results
+                # 2 looks better than -1 when printing the results
 
 #Loop through test set
 i = 0 
@@ -291,11 +290,15 @@ final_partial_labels = combine_cn2_expert(cn2_partial_labels, expert_labels)
 
 # +
 # Returns the percentage of correct labels
+# If the pred is 2 (expert knowledge), it is not counted as incorrect
 def get_accuracy(pred_labels, correct_labels):
-    num_correct = 0
+    num_correct, size_limiter = (0, 0)
     for pred, correct in zip(pred_labels, correct_labels):
-        if pred == correct: num_correct +=1
-    return round(((num_correct/len(correct_labels))*100), 1)
+        if pred == 2: 
+            size_limiter += 1
+        elif pred == correct:
+            num_correct +=1
+    return round(((num_correct/(len(correct_labels) - size_limiter))*100), 1)
 # Returns the precision&recall&f1 given the predicted and correct labels
 def get_prf1(pred_labels, correct_labels):
     true_pos, false_pos, true_neg, false_neg = (0, 0, 0, 0)
@@ -322,19 +325,19 @@ def get_coverage(labels):
 # The actual labels to compare against
 actual_labels = list(test_df['num'])
 
+# +
 # Print stuff
 print("EXPERT CLASSIFICATION:")
 print(f"Expert:\t{expert_labels}")
 print(f"Actual:\t{actual_labels}")
 print(f"Expert Accuracy:\t{get_accuracy(expert_labels, actual_labels)}%\t({get_coverage(expert_labels)}% coverage)")
-print(f"Precision/Recall/F1:\t{get_prf1(expert_labels, actual_labels)}")
 
 print("\nCN2 CLASSIFICATION (FULL TRAIN SET):")
 print(f"CN2:\t{cn2_full_labels}")
 print(f"Final:\t{final_full_labels}")
 print(f"Actual:\t{actual_labels}")
 print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_full_labels, actual_labels)}%")
-print(f"Final Accuracy:\t\t{get_accuracy(final_full_labels, actual_labels)}%")
+print(f"expCN2 Accuracy:\t{get_accuracy(final_full_labels, actual_labels)}%")
 print(f"Precision/Recall/F1:\t{get_prf1(final_full_labels, actual_labels)}")
 
 print("\nCN2 CLASSIFICATION (PARTIAL TRAIN SET):")
@@ -342,7 +345,7 @@ print(f"CN2:\t{cn2_partial_labels}")
 print(f"Final:\t{final_partial_labels}")
 print(f"Actual:\t{actual_labels}")
 print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_partial_labels, actual_labels)}%")
-print(f"Final Accuracy:\t\t{get_accuracy(final_partial_labels, actual_labels)}%")
+print(f"expCN2 Accuracy:\t{get_accuracy(final_partial_labels, actual_labels)}%")
 print(f"Precision/Recall/F1:\t{get_prf1(final_partial_labels, actual_labels)}")
 
 print("\nOTHER INFO:")
