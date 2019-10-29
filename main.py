@@ -76,15 +76,15 @@ test_rows = int(-(test_percentage/100) * len(df))
 #test_df = df.iloc[test_rows:]
 # Random Sampling
 train_df = df.sample(int((1-(test_percentage/100)) * len(df)), random_state=1337)
-test_df = df[~df.apply(tuple,1).isin(train_df.apply(tuple,1))]
+test_df = df[~df.apply(tuple,1).isin(train_df.apply(tuple,1))].sample(frac=1, random_state=1337)
 # DataFrame without labels
 train_df_not_num = train_df[train_df.columns.difference(['num'])]
 test_df_not_num = test_df[test_df.columns.difference(['num'])]
 
-# print(train_df.head())
-# print(test_df.head())
-# print(train_df_not_num.head())
-# print(test_df_not_num.head())
+print(train_df.head())
+print(test_df.head())
+print(train_df_not_num.head())
+print(test_df_not_num.head())
 
 print(f"Rows where oldpeak>=2.0 (train/test):\t({len(train_df.loc[train_df['oldpeak'] >= 2.0])}/{len(test_df.loc[test_df['oldpeak'] >= 2.0])})")
 print(f"Rows where thalach>=170 (train/test):\t({len(train_df.loc[train_df['thalach'] >= 170])}/{len(test_df.loc[test_df['thalach'] >= 170])})")
@@ -287,15 +287,31 @@ final_partial_labels = combine_cn2_expert(cn2_partial_labels, expert_labels)
 
 # -
 
-# ## Calculating accuracy scores
+# ## Calculating scores
 
 # +
 # Returns the percentage of correct labels
 def get_accuracy(pred_labels, correct_labels):
     num_correct = 0
-    for cn2, actual in zip(pred_labels, correct_labels):
-        if cn2 == actual: num_correct +=1
+    for pred, correct in zip(pred_labels, correct_labels):
+        if pred == correct: num_correct +=1
     return round(((num_correct/len(correct_labels))*100), 1)
+# Returns the precision&recall&f1 given the predicted and correct labels
+def get_prf1(pred_labels, correct_labels):
+    true_pos, false_pos, true_neg, false_neg = (0, 0, 0, 0)
+    precision, recall, f1 = (-1, -1, -1)
+    for pred, correct in zip(pred_labels, correct_labels):
+        if (pred == 1) and (correct == 1): true_pos += 1
+        if (pred == 1) and (correct == 0): false_pos += 1
+        if (pred == 0) and (correct == 0): true_neg += 1
+        if (pred == 0) and (correct == 1): false_neg += 1
+    # Calculate precision
+    if true_pos != 0 and false_pos != 0: precision = round(true_pos/(true_pos + false_pos), 2)
+    # Calculate recall
+    if true_pos != 0 and false_neg != 0: recall = round(true_pos/(true_pos + false_neg), 2)
+    # Calculate f1-score
+    if precision != -1 and recall != -1: f1 = round(2*((precision * recall) / (precision + recall)), 2)
+    return precision, recall, f1
 # Returns the percentage of useful labels of a label
 def get_coverage(labels):
     num_covered = 0
@@ -311,6 +327,7 @@ print("EXPERT CLASSIFICATION:")
 print(f"Expert:\t{expert_labels}")
 print(f"Actual:\t{actual_labels}")
 print(f"Expert Accuracy:\t{get_accuracy(expert_labels, actual_labels)}%\t({get_coverage(expert_labels)}% coverage)")
+print(f"Precision/Recall/F1:\t{get_prf1(expert_labels, actual_labels)}")
 
 print("\nCN2 CLASSIFICATION (FULL TRAIN SET):")
 print(f"CN2:\t{cn2_full_labels}")
@@ -318,6 +335,7 @@ print(f"Final:\t{final_full_labels}")
 print(f"Actual:\t{actual_labels}")
 print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_full_labels, actual_labels)}%")
 print(f"Final Accuracy:\t\t{get_accuracy(final_full_labels, actual_labels)}%")
+print(f"Precision/Recall/F1:\t{get_prf1(final_full_labels, actual_labels)}")
 
 print("\nCN2 CLASSIFICATION (PARTIAL TRAIN SET):")
 print(f"CN2:\t{cn2_partial_labels}")
@@ -325,10 +343,9 @@ print(f"Final:\t{final_partial_labels}")
 print(f"Actual:\t{actual_labels}")
 print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_partial_labels, actual_labels)}%")
 print(f"Final Accuracy:\t\t{get_accuracy(final_partial_labels, actual_labels)}%")
+print(f"Precision/Recall/F1:\t{get_prf1(final_partial_labels, actual_labels)}")
 
 print("\nOTHER INFO:")
 print(f"Full train set size:\t{len(train_df)}")
 print(f"Partial train set size:\t{len(train_partial_df)}")
-# -
-
-
+print(f"Test set size:\t\t{len(test_df)}")
