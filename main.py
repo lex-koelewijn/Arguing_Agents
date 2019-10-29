@@ -223,9 +223,13 @@ cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
 #Classify the test set according to our expert rules. You go through each measurement of a row in the test set until you find an applicable expert 
 #rule and let that rule decide the num that it shoud be classified as. 
 
+#Please note that the parameter list should contains all names of the parameters used in the rule dictionary in the same order. 
 rules_dict = {0: {'oldpeak': (2.0, 1, 0)}}
 parameters = ["oldpeak"]
 # parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
+
+#These are the names of the column in the data table
+table_columns = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
 expert_labels = [2]*len(test_df_not_num_orange)
                 # 2 looks better than -1 whet printing the results
 
@@ -233,11 +237,13 @@ expert_labels = [2]*len(test_df_not_num_orange)
 i = 0 
 for row in test_df_not_num_orange:
     m = 0 
-    for measurement in row: 
+    for rule in rules_dict: 
         if( m > len(parameters)-1):
             break
-        rule = rules_dict[m]                 #this gets the rule corresponding to the current measurement
-        rule_tuple = rule[parameters[m]]     #Get the tuple from the rule
+        #Get the apprioprate value from the current row
+        measurement = row[table_columns.index(parameters[m])]
+        #Get the rule tuple that is relevant
+        rule_tuple = rules_dict[rule][parameters[m]]
         if(rule_tuple[1]==0):
             #measurement must be smaller than
             if(measurement < rule_tuple[0]):
@@ -323,3 +329,6 @@ print(f"Final Accuracy:\t\t{get_accuracy(final_partial_labels, actual_labels)}%"
 print("\nOTHER INFO:")
 print(f"Full train set size:\t{len(train_df)}")
 print(f"Partial train set size:\t{len(train_partial_df)}")
+# -
+
+
