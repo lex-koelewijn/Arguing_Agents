@@ -161,18 +161,28 @@ def create_rule(df, parameter, percentage_expert_knowledge, high_to_low):
     new_df = df
     
     # Create an iterator that goes from max to min in intervals of 0.1
-    iterator = [x/10 for x in range(max_value * 10, min_value * 10, -1)]
-    
+    if(high_to_low == 1):
+        iterator = [x/10 for x in range(max_value * 10, min_value * 10, -1)]
+        operator_str = '>='
+        operator = 1
+    else:
+        iterator = [x/10 for x in range(min_value * 10, max_value * 10,  1)]
+        operator_str = '<'
+        operator = 0
+        
     for i in iterator:
-        new_df = df[df[parameter] >= i]
+        if(high_to_low == 1):
+            new_df = df[df[parameter] >= i]
+        else:
+            new_df = df[df[parameter] < i]
         if len(new_df) >= length_subset_df:
             value = i
             acc_score = len(new_df[new_df['num'] == num_value]) / len(new_df)
             break
             
-    operator = 1
     
-    print('IF ' + str(parameter) + '>=' + str(value) + ' THEN num=' + str(num_value) + '\n' \
+    
+    print('IF ' + str(parameter) + operator_str + str(value) + ' THEN num=' + str(num_value) + '\n' \
            + ' rows covered = ' + str(len(new_df)) + ' of minimal number of rows = ' + str(length_subset_df) + '\n' \
            + ' percentage: ' + str(int(len(new_df) / len(df) * 100)) + ' of ' + str(int(percentage_expert_knowledge * 100)) + ', acc_score: ' + str(acc_score))
 #     print('Number of rows where num is opposite of rule: ' + str(len(new_df_all) - len(new_df)) + ' from total ' + (str(len(new_df_all))))
@@ -180,14 +190,13 @@ def create_rule(df, parameter, percentage_expert_knowledge, high_to_low):
     
     return parameter, value, operator, num_value, new_df
 
-
 # +
 rules_dict = {}
 for index, (column, p_value) in enumerate(p_values_dict_sorted):
     parameter, value, operator, num, new_df = create_rule(df=df, 
                                                           parameter=column,
                                                           percentage_expert_knowledge=0.1,
-                                                          high_to_low=1)
+                                                          high_to_low=0) #Look at lower end of data [=0] or upper end of data [=1]
     rules = {}
     rules[column] = (int(value), operator, num)
     rules_dict[index] = rules
