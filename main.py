@@ -265,11 +265,16 @@ cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
 #Classify the test set according to our expert rules. You go through each measurement of a row in the test set until you find an applicable expert 
 #rule and let that rule decide the num that it shoud be classified as. 
 
+#Get the parameter list in the correct order
+parameters = []
+for tup in p_values_dict_sorted:
+    parameters.append(tup[0])
+
 #Please note that the parameter list should contains all names of the parameters used in the rule dictionary in the same order.
 # parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
 # 2 "Good" Rules
-rules_dict = {0: {"thalach": (170, 1, 0)}, 2: {"oldpeak": (2.0, 1, 0)}}
-parameters = ["thalach", "oldpeak"]
+# rules_dict = {0: {"thalach": (170, 1, 0)}, 2: {"oldpeak": (2.0, 1, 0)}}
+# parameters = ["thalach", "oldpeak"]
 # 2 "Bad" Rules
 # rules_dict = {0: {'sex': (1, 1, 0)}, 1: {"age": (54, 1, 0)}}
 # parameters = ["sex", "age"]
