@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.2.3
+#       jupytext_version: 1.2.4
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -67,14 +67,12 @@ df.nunique()
 # ## Creating train/test sets
 
 # +
-<<<<<<< HEAD
 # Select all the rows in the DataFrame except the last 10 percent,
 # which are used for classification, we can do this because the data
 # is shuffled.
-=======
 # Select all the rows in the DataFrame except the last n percent,
 # which are used for classification
->>>>>>> f0285b5a15362cec72683b76b574ec280faf0534
+
 test_percentage = 15
 test_rows = int(-(test_percentage/100) * len(df))
 # Static Sampling
@@ -87,12 +85,11 @@ test_df = df[~df.apply(tuple,1).isin(train_df.apply(tuple,1))].sample(frac=1, ra
 train_df_not_num = train_df[train_df.columns.difference(['num'])]
 test_df_not_num = test_df[test_df.columns.difference(['num'])]
 
-<<<<<<< HEAD
 print(train_df.head())
 print(test_df.head())
 print(train_df_not_num.head())
 print(test_df_not_num.head())
-=======
+
 # print(train_df.head())
 # print(test_df.head())
 # print(train_df_not_num.head())
@@ -106,7 +103,6 @@ print(f"train_df total length:\t{len(train_df)}")
 print(f"test_df total length:\t{len(test_df)}")
 
 
->>>>>>> f0285b5a15362cec72683b76b574ec280faf0534
 # -
 
 # ## Create Expert Knowledge
@@ -263,8 +259,8 @@ cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
 #Please note that the parameter list should contains all names of the parameters used in the rule dictionary in the same order.
 # parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
 # 2 "Good" Rules
-# rules_dict = {0: {"thalach": (170, 1, 0)}, 2: {"oldpeak": (2.0, 1, 0)}}
-# parameters = ["thalach", "oldpeak"]
+rules_dict = {0: {"thalach": (170, 1, 0)}, 2: {"oldpeak": (2.0, 1, 0)}}
+parameters = ["thalach", "oldpeak"]
 # 2 "Bad" Rules
 # rules_dict = {0: {'sex': (1, 1, 0)}, 1: {"age": (54, 1, 0)}}
 # parameters = ["sex", "age"]
@@ -396,10 +392,8 @@ print(f"Precision/Recall/F1:\t{get_prf1(final_partial_labels, actual_labels)}")
 print("\nOTHER INFO:")
 print(f"Full train set size:\t{len(train_df)}")
 print(f"Partial train set size:\t{len(train_partial_df)}")
-<<<<<<< HEAD
+print(f"Test set size:\t\t{len(test_df)}")
 # -
 
 
-=======
-print(f"Test set size:\t\t{len(test_df)}")
->>>>>>> f0285b5a15362cec72683b76b574ec280faf0534
+
