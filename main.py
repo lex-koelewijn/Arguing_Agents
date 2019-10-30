@@ -266,21 +266,27 @@ cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
 #rule and let that rule decide the num that it shoud be classified as. 
 
 #Get the parameter list in the correct order
-parameters = []
-for tup in p_values_dict_sorted:
-    parameters.append(tup[0])
+# parameters = []
+# for tup in p_values_dict_sorted:
+#     parameters.append(tup[0])
 
 #Please note that the parameter list should contains all names of the parameters used in the rule dictionary in the same order.
-# parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
-# 2 "Good" Rules
-# rules_dict = {0: {"thalach": (170, 1, 0)}, 2: {"oldpeak": (2.0, 1, 0)}}
-# parameters = ["thalach", "oldpeak"]
-# 2 "Bad" Rules
-# rules_dict = {0: {'sex': (1, 1, 0)}, 1: {"age": (54, 1, 0)}}
-# parameters = ["sex", "age"]
-# 4 "Bad" Rules
-# rules_dict = {0: {"chol": (289, 1, 0)}, 1: {"trestbps": (150, 1, 0), 2: {'sex': (1, 1, 0)}, 3: {"age": (54, 1, 0)}}}
-# parameters = ["chol", "trestbps", "sex", "age"]
+# 4 Good Rules
+rules_dict = {0: {"cp": (2.1, 0, 0)}, 1: {"oldpeak": (2.0, 1, 1), 2: {'sex': (0.1, 0, 0)}, 3: {"thalach": (170, 1, 0)}}}
+parameters = ["cp", "oldpeak", "sex", "thalach"]
+
+#The best rule
+# rules_dict = {0: {"cp": (2.1, 0, 0)}}
+# parameters = ["cp"]
+
+# 4 bad Rules
+# rules_dict = {0: {"restecg": (0.1, 0, 1)}, 1: {"sex": (1.0, 1, 1), 2: {'age': (57, 1, 1)}, 3: {"trestbps": (160, 1, 1)}}}
+# parameters = ["restecg", "sex", "sex", "trestbps"]
+
+#The worst rule
+# rules_dict = {0: {"restecg": (0.1, 0, 1)}}
+# parameters = ["restecg"]
+
 
 #These are the names of the column in the data table
 table_columns = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
@@ -392,6 +398,7 @@ print(f"CN2:\t{cn2_full_labels}")
 print(f"Final:\t{final_full_labels}")
 print(f"Actual:\t{actual_labels}")
 print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_full_labels, actual_labels)}%")
+print(f"Precision/Recall/F1:\t{get_prf1(cn2_full_labels, actual_labels)}")
 print(f"expCN2 Accuracy:\t{get_accuracy(final_full_labels, actual_labels)}%")
 print(f"Precision/Recall/F1:\t{get_prf1(final_full_labels, actual_labels)}")
 
@@ -400,6 +407,7 @@ print(f"CN2:\t{cn2_partial_labels}")
 print(f"Final:\t{final_partial_labels}")
 print(f"Actual:\t{actual_labels}")
 print(f"CN2 Accuracy:\t\t{get_accuracy(cn2_partial_labels, actual_labels)}%")
+print(f"Precision/Recall/F1:\t{get_prf1(cn2_partial_labels, actual_labels)}")
 print(f"expCN2 Accuracy:\t{get_accuracy(final_partial_labels, actual_labels)}%")
 print(f"Precision/Recall/F1:\t{get_prf1(final_partial_labels, actual_labels)}")
 
