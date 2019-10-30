@@ -75,8 +75,8 @@ test_rows = int(-(test_percentage/100) * len(df))
 #train_df = df.iloc[0:test_rows]
 #test_df = df.iloc[test_rows:]
 # Random Sampling
-train_df = df.sample(int((1-(test_percentage/100)) * len(df)), random_state=420)
-test_df = df[~df.apply(tuple,1).isin(train_df.apply(tuple,1))].sample(frac=1, random_state=420)
+train_df = df.sample(int((1-(test_percentage/100)) * len(df)), random_state=421)
+test_df = df[~df.apply(tuple,1).isin(train_df.apply(tuple,1))].sample(frac=1, random_state=421)
 # DataFrame without labels
 train_df_not_num = train_df[train_df.columns.difference(['num'])]
 test_df_not_num = test_df[test_df.columns.difference(['num'])]
@@ -222,10 +222,17 @@ cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
 #Classify the test set according to our expert rules. You go through each measurement of a row in the test set until you find an applicable expert 
 #rule and let that rule decide the num that it shoud be classified as. 
 
-#Please note that the parameter list should contains all names of the parameters used in the rule dictionary in the same order. 
-rules_dict = {0: {'thalach': (170, 1, 0)}}
-parameters = ["thalach"]
+#Please note that the parameter list should contains all names of the parameters used in the rule dictionary in the same order.
 # parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
+# 2 "Good" Rules
+# rules_dict = {0: {"thalach": (170, 1, 0)}, 2: {"oldpeak": (2.0, 1, 0)}}
+# parameters = ["thalach", "oldpeak"]
+# 2 "Bad" Rules
+# rules_dict = {0: {'sex': (1, 1, 0)}, 1: {"age": (54, 1, 0)}}
+# parameters = ["sex", "age"]
+# 4 "Bad" Rules
+# rules_dict = {0: {"chol": (289, 1, 0)}, 1: {"trestbps": (150, 1, 0), 2: {'sex': (1, 1, 0)}, 3: {"age": (54, 1, 0)}}}
+# parameters = ["chol", "trestbps", "sex", "age"]
 
 #These are the names of the column in the data table
 table_columns = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
