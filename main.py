@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.2.4
+#       jupytext_version: 1.2.3
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -68,7 +68,8 @@ df.nunique()
 
 # +
 # Select all the rows in the DataFrame except the last 10 percent,
-# which are used for classification
+# which are used for classification, we can do this because the data
+# is shuffled.
 test_percentage = 15
 test_rows = int(-(test_percentage/100) * len(df))
 train_df = df.iloc[0:test_rows]
@@ -85,8 +86,6 @@ print(train_df.head())
 print(test_df.head())
 print(train_df_not_num.head())
 print(test_df_not_num.head())
-
-
 # -
 
 # ## Create Expert Knowledge
@@ -97,62 +96,87 @@ print(test_df_not_num.head())
 #
 # Before all this we want to know which parameters have the most influence on the occurrence of a heart attack, which we can later use in the creation of expert knowledge rules.
 
-def create_rule(df, parameter, percentage_expert_knowledge, doubt_percentage):
+# Print for which variables higher values indicate heart attack,
+# using the mean.
+print(df[df['num'] == 0].mean() < df[df['num'] == 1].mean())
+
+# +
+# Use ANOVA to find the parameters which have the highest influence,
+# on the target value
+df_labels = df['num']
+df_not_num = df[df.columns.difference(['num'])]
+
+# Get p-values using ANOVA
+p_values = f_classif(df_not_num, df_labels)[1]
+
+# Combine p-values and correct parameters
+p_values_dict = {}
+for idx, value in enumerate(df_not_num.columns):
+    p_values_dict[value] = p_values[idx]
+    
+# # Sort dictionary based on p-values, lowest first
+p_values_dict_sorted = sorted(p_values_dict.items(), key=operator.itemgetter(1))
+p_values_dict_sorted
+
+
+# -
+
+def create_rule(df, parameter, percentage_expert_knowledge, high_to_low):
     # Get length of entire DataFrame and amount of rows that must removed by the rule
     length_df = len(df)
     length_subset_df = int(len(df) * percentage_expert_knowledge)
     
-    # Get the minimum and maximum 
+    # Get the minimum and maximum of given parameter
     max_value = int(df[parameter].max())
     min_value = int(df[parameter].min())
     
     # For all parameters except 'thalach' and 'restecg' high values indicate higher chance,
     # of heart attack.
-#     num_value = False if (parameter == 'thalach' or parameter == 'restecg') else num_value = True
     if parameter == 'thalach' or parameter == 'restecg':
-        num_value = 0
-#         df = df[df['num'] == 0]
+        num_value = (1 - high_to_low)
     else: 
-        num_value = 1
-#         df = df[df['num'] == 1]
+        num_value = high_to_low
     
-    # Loop from max to min and find the value where the rule covers 10% of the DataFrame.
-    # Values van 1 zijn groter dan die van 0
+    # Loop from max to min and find the value where the rule given percentage of DataFrame.
+    # Initialize values
     value = -1
+    acc_score = 0.0
     new_df = df
     
+    # Create an iterator that goes from max to min in intervals of 0.1
     iterator = [x/10 for x in range(max_value * 10, min_value * 10, -1)]
     
     for i in iterator:
-        new_df = df[(df[parameter] >= i) & (df['num'] == num_value)]
-        new_df_all = df[df[parameter] >= i]
-#         new_df_negative = df[(df[parameter] >= i) & (df['num'] != num_value)]
+        new_df = df[df[parameter] >= i]
         if len(new_df) >= length_subset_df:
             value = i
+            acc_score = len(new_df[new_df['num'] == num_value]) / len(new_df)
             break
+            
+    operator = 1
     
-    print('IF ' + str(parameter) + '>=' + str(value) + ' THEN num=' + str(df['num'].values[0]) + '\n' \
-           + ' rows covered = ' + str(len(new_df)) + ' of minimal number of rows = ' + str(length_subset_df))
-    print('Number of rows where num is opposite of rule: ' + str(len(new_df_all) - len(new_df)) + ' from total ' + (str(len(new_df_all))))
-    print('Accuracy is: '  + str(len(new_df) / len(new_df_all) * 100))
+    print('IF ' + str(parameter) + '>=' + str(value) + ' THEN num=' + str(num_value) + '\n' \
+           + ' rows covered = ' + str(len(new_df)) + ' of minimal number of rows = ' + str(length_subset_df) + '\n' \
+           + ' percentage: ' + str(int(len(new_df) / len(df) * 100)) + ' of ' + str(int(percentage_expert_knowledge * 100)) + ', acc_score: ' + str(acc_score))
+#     print('Number of rows where num is opposite of rule: ' + str(len(new_df_all) - len(new_df)) + ' from total ' + (str(len(new_df_all))))
+#     print('Accuracy is: '  + str(len(new_df) / len(new_df_all) * 100))
     
-#     return parameter, value, 1, df['num'].values[0], new_df
-    return parameter, value, 1, num_value, new_df
+    return parameter, value, operator, num_value, new_df
 
 
 # +
 rules_dict = {}
-for index, column in enumerate(train_df_not_num.columns):
-    parameter, value, operator, num, new_df = create_rule(df, column, 0.1, 0.5)
-    
+for index, (column, p_value) in enumerate(p_values_dict_sorted):
+    parameter, value, operator, num, new_df = create_rule(df=df, 
+                                                          parameter=column,
+                                                          percentage_expert_knowledge=0.1,
+                                                          high_to_low=1)
     rules = {}
-    rules[parameter] = (int(value), operator, num)
+    rules[column] = (int(value), operator, num)
     rules_dict[index] = rules
 
+# NOTE: Need to do this for the correct rule in the rules_dict, now it takes the last dict
 train_partial_df = train_df[~train_df.apply(tuple,1).isin(new_df.apply(tuple,1))]
-print(rules_dict)
-
-# SORT RULES BASED ON ACCURACY 
 # -
 
 # Documentation: https://github.com/biolab/orange3, https://docs.biolab.si//3/data-mining-library/
@@ -219,7 +243,7 @@ cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
 # parameters = ["age", "chol"]
 parameters = ["age", "chol", "cp", "exang", "fbs", "oldpeak", "restecg", "sex", "thalach", "trestbps"] 
 expert_labels = [2]*len(test_df_not_num_orange)
-                # 2 looks better than -1 whet printing the results
+                # 2 looks better than -1 when printing the results
 
 #Loop through test set
 i = 0 
@@ -247,7 +271,7 @@ for row in test_df_not_num_orange:
                 #Add the classification of this row by the expert rule to the classification list. 
                 expert_labels[i] = num_for_measurement
                 break
-            else: 
+            else:
                 m += 1     #No applicable expert rule found, try the next measurement
                 continue
     i += 1
@@ -315,3 +339,6 @@ print(f"Final Accuracy:\t\t{get_accuracy(final_partial_labels, actual_labels)}%"
 print("\nOTHER INFO:")
 print(f"Full train set size:\t{len(train_df)}")
 print(f"Partial train set size:\t{len(train_partial_df)}")
+# -
+
+
