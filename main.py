@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.2.4
+#       jupytext_version: 1.2.3
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -30,6 +30,7 @@ np.set_printoptions(suppress=True)
 pd.options.display.float_format = '{:.2f}'.format
 # -
 
+# Input data
 FILE_INPUT = 'data/data.csv'
 
 df = pd.read_csv(FILE_INPUT)
@@ -75,28 +76,13 @@ df.nunique()
 
 test_percentage = 15
 test_rows = int(-(test_percentage/100) * len(df))
-# Static Sampling
-#train_df = df.iloc[0:test_rows]
-#test_df = df.iloc[test_rows:]
+
 # Random Sampling
 train_df = df.sample(int((1-(test_percentage/100)) * len(df)), random_state=421)
 test_df = df[~df.apply(tuple,1).isin(train_df.apply(tuple,1))].sample(frac=1, random_state=421)
 # DataFrame without labels
 train_df_not_num = train_df[train_df.columns.difference(['num'])]
 test_df_not_num = test_df[test_df.columns.difference(['num'])]
-
-print(train_df.head())
-print(test_df.head())
-print(train_df_not_num.head())
-print(test_df_not_num.head())
-
-# print(train_df.head())
-# print(test_df.head())
-# print(train_df_not_num.head())
-# print(test_df_not_num.head())
-
-# print(f"Rows where oldpeak>=2.0 (train/test):\t({len(train_df.loc[train_df['oldpeak'] >= 2.0])}/{len(test_df.loc[test_df['oldpeak'] >= 2.0])})")
-# print(f"Rows where thalach>=170 (train/test):\t({len(train_df.loc[train_df['thalach'] >= 170])}/{len(test_df.loc[test_df['thalach'] >= 170])})")
 
 print(f"df total length:\t{len(df)}")
 print(f"train_df total length:\t{len(train_df)}")
@@ -160,7 +146,7 @@ def create_rule(df, parameter, percentage_expert_knowledge, high_to_low):
     acc_score = 0.0
     new_df = df
     
-    # Create an iterator that goes from max to min in intervals of 0.1
+    # Create an iterator that goes either from max to min or the other way around in intervals of 0.1
     if(high_to_low == 1):
         iterator = [x/10 for x in range(max_value * 10, min_value * 10, -1)]
         operator_str = '>='
@@ -170,6 +156,8 @@ def create_rule(df, parameter, percentage_expert_knowledge, high_to_low):
         operator_str = '<'
         operator = 0
         
+    # Use the iterator to find the correct value for i where the subset of the data where the values
+    # are either higher or lower than i is as large as percentage_expert_knowledge * len(df)
     for i in iterator:
         if(high_to_low == 1):
             new_df = df[df[parameter] >= i]
@@ -181,16 +169,15 @@ def create_rule(df, parameter, percentage_expert_knowledge, high_to_low):
             break
             
     
-    
+    # Print rules
     print('IF ' + str(parameter) + operator_str + str(value) + ' THEN num=' + str(num_value) + '\n' \
            + ' rows covered = ' + str(len(new_df)) + ' of minimal number of rows = ' + str(length_subset_df) + '\n' \
            + ' percentage: ' + str(int(len(new_df) / len(df) * 100)) + ' of ' + str(int(percentage_expert_knowledge * 100)) + ', acc_score: ' + str(acc_score))
-#     print('Number of rows where num is opposite of rule: ' + str(len(new_df_all) - len(new_df)) + ' from total ' + (str(len(new_df_all))))
-#     print('Accuracy is: '  + str(len(new_df) / len(new_df_all) * 100))
     
     return parameter, value, operator, num_value, new_df
 
 # +
+# Iterate through columns and return rules
 rules_dict = {}
 for index, (column, p_value) in enumerate(p_values_dict_sorted):
     parameter, value, operator, num, new_df = create_rule(df=df, 
@@ -209,7 +196,6 @@ train_partial_df = train_df[~train_df.apply(tuple,1).isin(new_df.apply(tuple,1))
 
 # ## CN2 Classifications
 
-# +
 ### Convert datasets to orange format
 # train set
 train_df.to_csv("data/train_df.csv", index=None)
@@ -223,10 +209,6 @@ train_partial_df_orange = Orange.data.Table("data/train_partial_df.csv")
 # test set not num
 test_df_not_num.to_csv("data/test_df_not_num.csv", index=None)
 test_df_not_num_orange = Orange.data.Table("data/test_df_not_num.csv")
-
-# print(len(train_df_not_num))
-# print(len(train_partial_df_not_num))
-# -
 
 # Find the index of num in the train set
 num_idx = [idx for idx, value in enumerate(train_df_orange.domain.attributes) if str(value) == 'num']
@@ -250,13 +232,6 @@ cn2_partial_trained = cn2_partial(train_partial_orange_table)
 # Classify the test sets
 cn2_full_labels = list(cn2_full_trained(test_orange_table, False))
 cn2_partial_labels = list(cn2_partial_trained(test_orange_table, False))
-
-# Print rules of CN2
-# for rule in cn2_full_trained.rule_list:
-#     print(rule.curr_class_dist.tolist(), rule, rule.quality)
-# print("---")
-# for rule in cn2_partial_trained.rule_list:
-#     print(rule.curr_class_dist.tolist(), rule, rule.quality)
 # -
 
 # ## Expert Classification
@@ -415,7 +390,3 @@ print("\nOTHER INFO:")
 print(f"Full train set size:\t{len(train_df)}")
 print(f"Partial train set size:\t{len(train_partial_df)}")
 print(f"Test set size:\t\t{len(test_df)}")
-# -
-
-
-
