@@ -1,6 +1,10 @@
 # Run Instructions
 ### Preparations
-As briefly mentioned in our report and presentation, we had some difficulties getting the Orange3 library to work properly. There is several ways of installing it. We recommend using Linux in combination with Anaconda. Instructions on how to install Anaconda can be found [here](https://docs.anaconda.com/anaconda/install/linux/). Instructions on how to install Orange3 using Anaconda can be found [here](https://orange.biolab.si/download/#linux).
+As briefly mentioned in our report and presentation, we had some difficulties getting the Orange3 library to work properly. There is several ways of installing it. We recommend using Linux in combination with Anaconda. 
+
+If Anaconda is not yet installed on your system, please follow these instructions:
+Instructions on how to install Anaconda can be found [here](https://docs.anaconda.com/anaconda/install/linux/). 
+
 ## Clone the code
 Please clone this repository and navigate to it:
 ```
@@ -17,7 +21,7 @@ conda activate arg
 ## Install packages
 Then install the required Python packages using `pip`:
 ```
-pip install -r setup/requirements.txt
+pip install -r requirements.txt
 ```
 ## Install Orange & Jupyter
 Now, install `Orange3` and `Jupyter Lab` with all their respective dependencies:
@@ -37,3 +41,4 @@ Running the code is now easy by launching `Jupyter Lab` and opening the `main.ip
 ```
 jupyter lab
 ```
+Run all the cells 
